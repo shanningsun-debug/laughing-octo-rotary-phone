@@ -1,6 +1,7 @@
 import os
 import json
 import requests
+import urllib.parse
 from bs4 import BeautifulSoup
 
 def load_config():
@@ -8,8 +9,6 @@ def load_config():
         return json.load(f)
 
 def fetch_web_news(keyword):
-    # Кодируем поисковый запрос, чтобы он корректно воспринимался на любом языке
-    import urllib.parse
     query = urllib.parse.quote(f"{keyword} новости сегодня")
     url = f"https://duckduckgo.com{query}"
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
@@ -21,8 +20,6 @@ def fetch_web_news(keyword):
             results = [link.get_text() for link in links[:3]]
             return results
     except Exception as e:
-        print(f"Ошибка поиска по ключевому слову {keyword}: {e}")
-    return []
         print(f"Ошибка поиска по ключевому слову {keyword}: {e}")
     return []
 
@@ -60,7 +57,7 @@ def ask_chatgpt_to_summarize(raw_text):
         "temperature": 0.3
     }
 
-    print("AI Отправляю данные в ChatGPT через ProxyAPI для генерации дайджеста...")
+    print("🤖 Отправляю данные в ChatGPT через ProxyAPI для генерации дайджеста...")
     try:
         response = requests.post("https://proxyapi.ru", headers=headers, json=data, timeout=30)
         if response.status_code == 200:
@@ -77,7 +74,6 @@ def main():
     all_collected_news = []
     
     print("🤖 Запуск ИИ-агента...")
-    # Робот будет собирать новости по ключевым словам из вашего config.json
     for keyword in config.get('keywords', ['акции', 'экономика', 'биткоин']):
         print(f"📡 Поиск в сети по теме: {keyword}...")
         news = fetch_web_news(keyword)
