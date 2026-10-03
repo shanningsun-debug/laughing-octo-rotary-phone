@@ -3,12 +3,10 @@ import json
 import requests
 from bs4 import BeautifulSoup
 
-# Шаг 1: Загружаем настройки каналов
 def load_config():
     with open('config.json', 'r', encoding='utf-8') as f:
         return json.load(f)
 
-# Шаг 2: Функция парсинга последних сообщений из Telegram
 def fetch_telegram_news(channel_name):
     url = f"https://t.me{channel_name}"
     try:
@@ -16,17 +14,15 @@ def fetch_telegram_news(channel_name):
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
             messages = soup.find_all('div', class_='tgme_widget_message_text')
-            # Забираем последние 5 постов из каждого канала
             return [msg.get_text(separator=" ") for msg in messages[-5:]]
     except Exception as e:
         print(f"Ошибка при чтении канала {channel_name}: {e}")
     return []
 
-# Шаг 3: Отправка собранного контента в ChatGPT API
 def ask_chatgpt_to_summarize(raw_text):
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        print("❌ Ошибка: Не найден OPENAI_API_KEY в переменных окружения!")
+        print("❌ Ошибка: Не найден OPENAI_API_KEY в переменных окружения вашего компьютера!")
         return None
 
     headers = {
@@ -34,7 +30,6 @@ def ask_chatgpt_to_summarize(raw_text):
         "Content-Type": "application/json"
     }
     
-    # Формируем жесткое ТЗ для нейросети
     prompt = f"""
     Ты — профессиональный финансовый аналитик и главный редактор инвест-канала.
     Твоя задача — изучить массив сырого текста новостей за сегодня и составить ОДИН качественный, емкий, структурированный дайджест.
@@ -60,17 +55,16 @@ def ask_chatgpt_to_summarize(raw_text):
 
     print("🤖 Отправляю данные в ChatGPT для генерации дайджеста...")
     try:
-        response = requests.post("https://https://proxyapi.ru", headers=headers, json=data, timeout=30)
+        response = requests.post("https://proxyapi.ru", headers=headers, json=data, timeout=30)
         if response.status_code == 200:
             result = response.json()
-            return result['choices'][0]['message']['content']
+            return result['choices']['message']['content']
         else:
             print(f"❌ Ошибка API: {response.status_code} - {response.text}")
     except Exception as e:
-        print(f"Ошибка при запросе к OpenAI: {e}")
+        print(f"Ошибка при запросе: {e}")
     return None
 
-# Шаг 4: Основная логика
 def main():
     config = load_config()
     all_collected_news = []
@@ -85,10 +79,7 @@ def main():
         print("❌ Новых новостей не найдено.")
         return
 
-    # Объединяем все посты в один большой текст
     full_raw_text = "\n--- НОВАЯ ЗАПИСЬ ---\n".join(all_collected_news)
-    
-    # Передаем текст в ChatGPT
     final_digest = ask_chatgpt_to_summarize(full_raw_text)
     
     if final_digest:
@@ -97,3 +88,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
