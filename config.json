@@ -1,5 +1,10 @@
 {
-  "channels": [],
+  "channels": [
+    "rbc_invest",
+    "vestifinance_ru",
+    "trendyitreidy",
+    "fm_invest"
+  ],
   "update_interval_minutes": 60,
-  "keywords": ["акции", "ставка", "санкции", "биткоин", "золото"]
+  "keywords": ["акции", "ставка", "санкции", "биткоин", "золото", "налоги", "инфляция"]
 }
