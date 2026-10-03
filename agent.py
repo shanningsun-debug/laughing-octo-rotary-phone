@@ -1,28 +1,29 @@
 import os
 import json
 import requests
-import urllib.parse
 from bs4 import BeautifulSoup
 
 def load_config():
-    with open('config.json', 'r', encoding='utf-8') as f:
-        return json.load(f)
+    # Если файла настроек нет, используем встроенный список тем
+    try:
+        with open('config.json', 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except:
+        return {"keywords": ["russia economy", "fed rate", "stocks market", "bitcoin", "gold price"]}
 
 def fetch_google_news(keyword):
-    # Используем официальную и незаблокированную RSS-ленту Google Новости
-    query = urllib.parse.quote(f"{keyword} новости")
-    url = f"https://google.com{query}&hl=ru&gl=RU&ceid=RU:ru"
+    # Безопасный глобальный поиск новостей через Google RSS
+    url = f"https://google.com{keyword}&hl=ru&gl=RU&ceid=RU:ru"
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
     try:
         response = requests.get(url, headers=headers, timeout=15)
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'xml')
             items = soup.find_all('item')
-            # Забираем заголовки последних 4 главных новостей по теме
             results = [item.find('title').get_text() for item in items[:4] if item.find('title')]
             return results
     except Exception as e:
-        print(f"Ошибка поиска Google по ключевому слову {keyword}: {e}")
+        print(f"Ошибка поиска Google по теме {keyword}: {e}")
     return []
 
 def ask_chatgpt_to_summarize(raw_text):
@@ -38,7 +39,7 @@ def ask_chatgpt_to_summarize(raw_text):
     
     prompt = f"""
     Ты — профессиональный финансовый аналитик и главный редактор инвест-канала.
-    Твоя задача — изучить массив сырого текста новостей за сегодня и составить ОДИН качественный, емкий, структурированный дайджест.
+    Твоя задача — изучить массив сырого текста мировых и российских новостей за сегодня и составить ОДИН качественный, емкий, структурированный дайджест НА РУССКОМ ЯЗЫКЕ.
     
     Обязательно разбей текст строго по этим 5 блокам:
     1. **Геополитика** — главные мировые события, влияющие на рынки.
@@ -72,11 +73,13 @@ def ask_chatgpt_to_summarize(raw_text):
     return None
 
 def main():
-    config = load_config()
     all_collected_news = []
     
+    # Набор железобетонных латинских тем для стабильного поиска новостей
+    safe_keywords = ["russia economy", "fed rate", "stocks market", "bitcoin", "gold price", "geopolitics markets"]
+    
     print("🤖 Запуск ИИ-агента...")
-    for keyword in config.get('keywords', ['акции', 'экономика', 'биткоин']):
+    for keyword in safe_keywords:
         print(f"📡 Сбор новостей Google по теме: {keyword}...")
         news = fetch_google_news(keyword)
         all_collected_news.extend(news)
@@ -94,4 +97,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
