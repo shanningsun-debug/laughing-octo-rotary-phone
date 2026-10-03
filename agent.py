@@ -7,26 +7,20 @@ def load_config():
     with open('config.json', 'r', encoding='utf-8') as f:
         return json.load(f)
 
-def fetch_telegram_news(channel_name):
-    # Используем стабильный и незаблокированный RSS-мост для Telegram
-    url = f"https://etf.cx{channel_name}"
+def fetch_web_news(keyword):
+    # Ищем свежие экономические новости через открытый веб-поиск
+    url = f"https://duckduckgo.com{keyword}+news+today"
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
     try:
-        response = requests.get(url, timeout=15)
+        response = requests.get(url, headers=headers, timeout=15)
         if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'xml') # читаем как XML/RSS
-            items = soup.find_all('item')
-            
-            posts = []
-            # Забираем последние 5 постов
-            for item in items[:5]:
-                description = item.find('description')
-                if description:
-                    # Очищаем текст от HTML-тегов, если они есть
-                    clean_text = BeautifulSoup(description.text, 'html.parser').get_text(separator=" ")
-                    posts.append(clean_text)
-            return posts
+            soup = BeautifulSoup(response.text, 'html.parser')
+            # Находим заголовки и описания новостей в поисковой выдаче
+            links = soup.find_all('a', class_='result__snippet')
+            results = [link.get_text() for link in links[:3]]
+            return results
     except Exception as e:
-        print(f"Ошибка при чтении канала {channel_name}: {e}")
+        print(f"Ошибка поиска по ключевому слову {keyword}: {e}")
     return []
 
 def ask_chatgpt_to_summarize(raw_text):
@@ -63,7 +57,7 @@ def ask_chatgpt_to_summarize(raw_text):
         "temperature": 0.3
     }
 
-    print("🤖 Отправляю данные в ChatGPT через ProxyAPI для генерации дайджеста...")
+    print("AI Отправляю данные в ChatGPT через ProxyAPI для генерации дайджеста...")
     try:
         response = requests.post("https://proxyapi.ru", headers=headers, json=data, timeout=30)
         if response.status_code == 200:
@@ -80,13 +74,14 @@ def main():
     all_collected_news = []
     
     print("🤖 Запуск ИИ-агента...")
-    for channel in config['channels']:
-        print(f"📡 Сбор новостей из: @{channel}...")
-        posts = fetch_telegram_news(channel)
-        all_collected_news.extend(posts)
+    # Робот будет собирать новости по ключевым словам из вашего config.json
+    for keyword in config.get('keywords', ['акции', 'экономика', 'биткоин']):
+        print(f"📡 Поиск в сети по теме: {keyword}...")
+        news = fetch_web_news(keyword)
+        all_collected_news.extend(news)
         
     if not all_collected_news:
-        print("❌ Новых новостей не найдено или каналы пусты.")
+        print("❌ Новых новостей в сети не найдено.")
         return
 
     full_raw_text = "\n--- НОВАЯ ЗАПИСЬ ---\n".join(all_collected_news)
