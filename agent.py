@@ -8,18 +8,21 @@ def load_config():
         return json.load(f)
 
 def fetch_web_news(keyword):
-    # Ищем свежие экономические новости через открытый веб-поиск
-    url = f"https://duckduckgo.com{keyword}+news+today"
+    # Кодируем поисковый запрос, чтобы он корректно воспринимался на любом языке
+    import urllib.parse
+    query = urllib.parse.quote(f"{keyword} новости сегодня")
+    url = f"https://duckduckgo.com{query}"
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
     try:
         response = requests.get(url, headers=headers, timeout=15)
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
-            # Находим заголовки и описания новостей в поисковой выдаче
             links = soup.find_all('a', class_='result__snippet')
             results = [link.get_text() for link in links[:3]]
             return results
     except Exception as e:
+        print(f"Ошибка поиска по ключевому слову {keyword}: {e}")
+    return []
         print(f"Ошибка поиска по ключевому слову {keyword}: {e}")
     return []
 
