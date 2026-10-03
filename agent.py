@@ -60,7 +60,7 @@ def ask_chatgpt_to_summarize(raw_text):
 
     print("🤖 Отправляю данные в ChatGPT для генерации дайджеста...")
     try:
-        response = requests.post("https://openai.com", headers=headers, json=data, timeout=30)
+        response = requests.post("https://https://proxyapi.ru", headers=headers, json=data, timeout=30)
         if response.status_code == 200:
             result = response.json()
             return result['choices'][0]['message']['content']
