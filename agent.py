@@ -8,19 +8,21 @@ def load_config():
     with open('config.json', 'r', encoding='utf-8') as f:
         return json.load(f)
 
-def fetch_web_news(keyword):
-    query = urllib.parse.quote(f"{keyword} новости сегодня")
-    url = f"https://duckduckgo.com{query}"
+def fetch_google_news(keyword):
+    # Используем официальную и незаблокированную RSS-ленту Google Новости
+    query = urllib.parse.quote(f"{keyword} новости")
+    url = f"https://google.com{query}&hl=ru&gl=RU&ceid=RU:ru"
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
     try:
         response = requests.get(url, headers=headers, timeout=15)
         if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            links = soup.find_all('a', class_='result__snippet')
-            results = [link.get_text() for link in links[:3]]
+            soup = BeautifulSoup(response.text, 'xml')
+            items = soup.find_all('item')
+            # Забираем заголовки последних 4 главных новостей по теме
+            results = [item.find('title').get_text() for item in items[:4] if item.find('title')]
             return results
     except Exception as e:
-        print(f"Ошибка поиска по ключевому слову {keyword}: {e}")
+        print(f"Ошибка поиска Google по ключевому слову {keyword}: {e}")
     return []
 
 def ask_chatgpt_to_summarize(raw_text):
@@ -75,8 +77,8 @@ def main():
     
     print("🤖 Запуск ИИ-агента...")
     for keyword in config.get('keywords', ['акции', 'экономика', 'биткоин']):
-        print(f"📡 Поиск в сети по теме: {keyword}...")
-        news = fetch_web_news(keyword)
+        print(f"📡 Сбор новостей Google по теме: {keyword}...")
+        news = fetch_google_news(keyword)
         all_collected_news.extend(news)
         
     if not all_collected_news:
