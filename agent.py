@@ -8,13 +8,23 @@ def load_config():
         return json.load(f)
 
 def fetch_telegram_news(channel_name):
-    url = f"https://t.me{channel_name}"
+    # Используем стабильный и незаблокированный RSS-мост для Telegram
+    url = f"https://etf.cx{channel_name}"
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=15)
         if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            messages = soup.find_all('div', class_='tgme_widget_message_text')
-            return [msg.get_text(separator=" ") for msg in messages[-5:]]
+            soup = BeautifulSoup(response.text, 'xml') # читаем как XML/RSS
+            items = soup.find_all('item')
+            
+            posts = []
+            # Забираем последние 5 постов
+            for item in items[:5]:
+                description = item.find('description')
+                if description:
+                    # Очищаем текст от HTML-тегов, если они есть
+                    clean_text = BeautifulSoup(description.text, 'html.parser').get_text(separator=" ")
+                    posts.append(clean_text)
+            return posts
     except Exception as e:
         print(f"Ошибка при чтении канала {channel_name}: {e}")
     return []
@@ -53,7 +63,7 @@ def ask_chatgpt_to_summarize(raw_text):
         "temperature": 0.3
     }
 
-    print("🤖 Отправляю данные в ChatGPT для генерации дайджеста...")
+    print("🤖 Отправляю данные в ChatGPT через ProxyAPI для генерации дайджеста...")
     try:
         response = requests.post("https://proxyapi.ru", headers=headers, json=data, timeout=30)
         if response.status_code == 200:
@@ -76,7 +86,7 @@ def main():
         all_collected_news.extend(posts)
         
     if not all_collected_news:
-        print("❌ Новых новостей не найдено.")
+        print("❌ Новых новостей не найдено или каналы пусты.")
         return
 
     full_raw_text = "\n--- НОВАЯ ЗАПИСЬ ---\n".join(all_collected_news)
